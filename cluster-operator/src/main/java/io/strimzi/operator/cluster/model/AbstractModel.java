@@ -27,8 +27,6 @@ import io.fabric8.kubernetes.api.model.PersistentVolumeClaim;
 import io.fabric8.kubernetes.api.model.PersistentVolumeClaimBuilder;
 import io.fabric8.kubernetes.api.model.PodSecurityContext;
 import io.fabric8.kubernetes.api.model.PodSecurityContextBuilder;
-import io.fabric8.kubernetes.api.model.Probe;
-import io.fabric8.kubernetes.api.model.ProbeBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.Secret;
@@ -119,11 +117,7 @@ public abstract class AbstractModel {
     protected int replicas;
 
     protected String readinessPath;
-    protected int readinessTimeout;
-    protected int readinessInitialDelay;
     protected String livenessPath;
-    protected int livenessTimeout;
-    protected int livenessInitialDelay;
 
     protected String serviceName;
     protected String headlessServiceName;
@@ -180,6 +174,8 @@ public abstract class AbstractModel {
     private String ownerApiVersion;
     private String ownerKind;
     private String ownerUid;
+    protected io.strimzi.api.kafka.model.Probe readinessProbeOptions;
+    protected io.strimzi.api.kafka.model.Probe livenessProbeOptions;
 
     /**
      * Constructor
@@ -210,20 +206,12 @@ public abstract class AbstractModel {
         this.image = image;
     }
 
-    protected void setReadinessTimeout(int readinessTimeout) {
-        this.readinessTimeout = readinessTimeout;
+    protected void setReadinessProbe(io.strimzi.api.kafka.model.Probe probe) {
+        this.readinessProbeOptions = probe;
     }
 
-    protected void setReadinessInitialDelay(int readinessInitialDelay) {
-        this.readinessInitialDelay = readinessInitialDelay;
-    }
-
-    protected void setLivenessTimeout(int livenessTimeout) {
-        this.livenessTimeout = livenessTimeout;
-    }
-
-    protected void setLivenessInitialDelay(int livenessInitialDelay) {
-        this.livenessInitialDelay = livenessInitialDelay;
+    protected void setLivenessProbe(io.strimzi.api.kafka.model.Probe probe) {
+        this.livenessProbeOptions = probe;
     }
 
     /**
@@ -727,32 +715,6 @@ public abstract class AbstractModel {
 
     protected Secret createSecret(String name, Map<String, String> data) {
         return ModelUtils.createSecret(name, namespace, labels, createOwnerReference(), data);
-    }
-
-    protected Probe createTcpSocketProbe(int port, int initialDelay, int timeout) {
-        Probe probe = new ProbeBuilder()
-                .withNewTcpSocket()
-                    .withNewPort()
-                        .withIntVal(port)
-                    .endPort()
-                .endTcpSocket()
-                .withInitialDelaySeconds(initialDelay)
-                .withTimeoutSeconds(timeout)
-                .build();
-        log.trace("Created TCP socket probe {}", probe);
-        return probe;
-    }
-
-    protected Probe createHttpProbe(String path, String port, int initialDelay, int timeout) {
-        Probe probe = new ProbeBuilder().withNewHttpGet()
-                .withPath(path)
-                .withNewPort(port)
-                .endHttpGet()
-                .withInitialDelaySeconds(initialDelay)
-                .withTimeoutSeconds(timeout)
-                .build();
-        log.trace("Created http probe {}", probe);
-        return probe;
     }
 
     protected Service createService(String type, List<ServicePort> ports,  Map<String, String> annotations) {
